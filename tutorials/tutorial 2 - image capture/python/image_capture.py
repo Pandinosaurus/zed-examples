@@ -1,6 +1,6 @@
 ########################################################################
 #
-# Copyright (c) 2021, STEREOLABS.
+# Copyright (c) 2022, STEREOLABS.
 #
 # All rights reserved.
 #
@@ -27,13 +27,15 @@ def main():
 
     # Create a InitParameters object and set configuration parameters
     init_params = sl.InitParameters()
-    init_params.camera_resolution = sl.RESOLUTION.HD1080  # Use HD1080 video mode
+    init_params.camera_resolution = sl.RESOLUTION.AUTO # Use HD720 opr HD1200 video mode, depending on camera type.
     init_params.camera_fps = 30  # Set fps at 30
 
     # Open the camera
     err = zed.open(init_params)
     if err != sl.ERROR_CODE.SUCCESS:
-        exit(1)
+        print("Camera Open : "+repr(err)+". Exit program.")
+        exit()
+
 
     # Capture 50 frames and stop
     i = 0

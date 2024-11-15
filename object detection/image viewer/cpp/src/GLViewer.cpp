@@ -5,7 +5,7 @@
 #error "This sample should not be built in Debug mode, use RelWithDebInfo if you want to do step by step."
 #endif
 
-GLchar* VERTEX_SHADER =
+const GLchar* VERTEX_SHADER =
         "#version 330 core\n"
         "layout(location = 0) in vec3 in_Vertex;\n"
         "layout(location = 1) in vec4 in_Color;\n"
@@ -16,7 +16,7 @@ GLchar* VERTEX_SHADER =
         "	gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
         "}";
 
-GLchar* FRAGMENT_SHADER =
+const GLchar* FRAGMENT_SHADER =
         "#version 330 core\n"
         "in vec4 b_color;\n"
         "layout(location = 0) out vec4 out_Color;\n"
@@ -25,7 +25,7 @@ GLchar* FRAGMENT_SHADER =
         "   out_Color = b_color;//pow(b_color, vec4(1.0/gamma));;\n"
         "}";
 
-GLchar* SK_VERTEX_SHADER =
+const GLchar* SK_VERTEX_SHADER =
 		"#version 330 core\n"
 		"layout(location = 0) in vec3 in_Vertex;\n"
 		"layout(location = 1) in vec4 in_Color;\n"
@@ -42,7 +42,7 @@ GLchar* SK_VERTEX_SHADER =
 		"	gl_Position =  u_mvpMatrix * vec4(in_Vertex, 1);\n"
 		"}";
 
-GLchar* SK_FRAGMENT_SHADER =
+const GLchar* SK_FRAGMENT_SHADER =
 		"#version 330 core\n"
 		"in vec4 b_color;\n"
 		"in vec3 b_position;\n"
@@ -149,17 +149,17 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters param, bool isTr
     glEnable(GL_FRAMEBUFFER_SRGB);
 
     // Compile and create the shader for 3D objects
-    shader.it = Shader(VERTEX_SHADER, FRAGMENT_SHADER);
+    shader.it.set(VERTEX_SHADER, FRAGMENT_SHADER);
     shader.MVP_Mat = glGetUniformLocation(shader.it.getProgramId(), "u_mvpMatrix");
 
     // Create the rendering camera
     setRenderCameraProjection(param,0.5f,20);
 
     // Create the bounding box object
-	BBox_edges = Simple3DObject(sl::Translation(0, 0, 0), false);
+    BBox_edges.init(sl::Translation(0, 0, 0), false);
 	BBox_edges.setDrawingType(GL_LINES);
 
-	BBox_faces = Simple3DObject(sl::Translation(0, 0, 0), false);
+    BBox_faces.init(sl::Translation(0, 0, 0), false);
 	BBox_faces.setDrawingType(GL_QUADS);
 
     // Set background color (black)
@@ -371,24 +371,23 @@ void GLViewer::idle() {
     glutPostRedisplay();
 }
 
-Simple3DObject::Simple3DObject() {
-    is_init=false;
-}
-
-Simple3DObject::Simple3DObject(sl::Translation position, bool isStatic) : isStatic_(isStatic) {
-	vaoID_ = 0;
-	drawingType_ = GL_TRIANGLES;
-	position_ = position;
-	rotation_.setIdentity();
-}
+Simple3DObject::Simple3DObject() : vaoID_(0), is_init(false) {}
 
 Simple3DObject::~Simple3DObject() {
-    if (vaoID_ != 0) {
+    if (is_init) {
         glDeleteBuffers(4, vboID_);
         glDeleteVertexArrays(1, &vaoID_);
         vaoID_=0;
         is_init=false;
     }
+}
+
+void Simple3DObject::init(const sl::Translation& position, const bool isStatic) {
+    vaoID_ = 0;
+    drawingType_ = GL_TRIANGLES;
+    position_ = position;
+	isStatic_ = isStatic;
+    rotation_.setIdentity();
 }
 
 bool Simple3DObject::isInit()
@@ -870,7 +869,11 @@ sl::Transform Simple3DObject::getModelMatrix() const {
     return tmp;
 }
 
-Shader::Shader(GLchar* vs, GLchar* fs) {
+Shader::Shader(const GLchar* vs, const GLchar* fs) {
+    set(vs, fs);
+}
+
+void Shader::set(const GLchar* vs, const GLchar* fs) {
     if (!compile(verterxId_, GL_VERTEX_SHADER, vs)) {
         std::cout << "ERROR: while compiling vertex shader" << std::endl;
     }
@@ -906,19 +909,19 @@ Shader::Shader(GLchar* vs, GLchar* fs) {
 }
 
 Shader::~Shader() {
-    if (verterxId_ != 0)
+    if (verterxId_ != 0 && glIsShader(verterxId_))
         glDeleteShader(verterxId_);
-    if (fragmentId_ != 0)
+    if (fragmentId_ != 0 && glIsShader(fragmentId_))
         glDeleteShader(fragmentId_);
-    if (programId_ != 0)
-        glDeleteShader(programId_);
+    if (programId_ != 0 && glIsProgram(programId_))
+        glDeleteProgram(programId_);
 }
 
 GLuint Shader::getProgramId() {
     return programId_;
 }
 
-bool Shader::compile(GLuint &shaderId, GLenum type, GLchar* src) {
+bool Shader::compile(GLuint &shaderId, GLenum type, const GLchar* src) {
     shaderId = glCreateShader(type);
     if (shaderId == 0) {
         std::cout << "ERROR: shader type (" << type << ") does not exist" << std::endl;
@@ -946,7 +949,7 @@ bool Shader::compile(GLuint &shaderId, GLenum type, GLchar* src) {
     return true;
 }
 
-GLchar* IMAGE_FRAGMENT_SHADER =
+const GLchar* IMAGE_FRAGMENT_SHADER =
         "#version 330 core\n"
         " in vec2 UV;\n"
         " out vec4 color;\n"
@@ -961,7 +964,7 @@ GLchar* IMAGE_FRAGMENT_SHADER =
         "    color = vec4(color_rgb,1);\n"
         "}";
 
-GLchar* IMAGE_VERTEX_SHADER =
+const GLchar* IMAGE_VERTEX_SHADER =
         "#version 330\n"
         "layout(location = 0) in vec3 vert;\n"
         "out vec2 UV;"
@@ -971,18 +974,19 @@ GLchar* IMAGE_VERTEX_SHADER =
         "}\n";
 
 
-ImageHandler::ImageHandler() {}
+ImageHandler::ImageHandler() : imageTex(0) {}
 
 ImageHandler::~ImageHandler() {
     close();
 }
 
 void ImageHandler::close() {
-    glDeleteTextures(1, &imageTex);
+    if (imageTex != 0)
+        glDeleteTextures(1, &imageTex);
 }
 
 bool ImageHandler::initialize(sl::Resolution res) {
-    shaderImage.it = Shader(IMAGE_VERTEX_SHADER,IMAGE_FRAGMENT_SHADER);
+    shaderImage.it.set(IMAGE_VERTEX_SHADER,IMAGE_FRAGMENT_SHADER);
     texID = glGetUniformLocation(shaderImage.it.getProgramId(), "texImage");
     static const GLfloat g_quad_vertex_buffer_data[] = {
         -1.0f, -1.0f, 0.0f,

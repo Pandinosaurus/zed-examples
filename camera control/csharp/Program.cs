@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2021, STEREOLABS.
+// Copyright (c) 2024, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -49,7 +49,6 @@ class Program
 
         InitParameters initParameters = new InitParameters()
         {
-            sdkVerbose = true,
             resolution = RESOLUTION.HD720,
             depthMode = DEPTH_MODE.NONE
         };
@@ -184,7 +183,7 @@ class Program
             camera_settings_ = (VIDEO_SETTINGS)((int)camera_settings_ + 1);
 
         // select the right step
-        step_camera_setting = (camera_settings_ == VIDEO_SETTINGS.WHITEBALANCE) ? 100 : 1;
+        step_camera_setting = (camera_settings_ == VIDEO_SETTINGS.WHITEBALANCE_TEMPERATURE) ? 100 : 1;
 
         // get the name of the selected SETTING
         str_camera_settings = camera_settings_.ToString();

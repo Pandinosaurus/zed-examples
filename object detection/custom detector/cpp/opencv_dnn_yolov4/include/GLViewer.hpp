@@ -104,16 +104,25 @@ private:
 class Shader {
 public:
 
-    Shader() {
-    }
-    Shader(GLchar* vs, GLchar* fs);
+    Shader() : verterxId_(0), fragmentId_(0), programId_(0) {}
+    Shader(const GLchar* vs, const GLchar* fs);
     ~Shader();
+
+    // Delete the move constructor and move assignment operator
+    Shader(Shader&&) = delete;
+    Shader& operator=(Shader&&) = delete;
+
+    // Delete the copy constructor and copy assignment operator
+    Shader(const Shader&) = delete;
+    Shader& operator=(const Shader&) = delete;
+
+    void set(const GLchar* vs, const GLchar* fs);
     GLuint getProgramId();
 
     static const GLint ATTRIB_VERTICES_POS = 0;
     static const GLint ATTRIB_COLOR_POS = 1;
 private:
-    bool compile(GLuint &shaderId, GLenum type, GLchar* src);
+    bool compile(GLuint &shaderId, GLenum type, const GLchar* src);
     GLuint verterxId_;
     GLuint fragmentId_;
     GLuint programId_;

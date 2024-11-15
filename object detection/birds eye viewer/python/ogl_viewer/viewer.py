@@ -350,7 +350,7 @@ class Simple3DObject:
         self.drawing_type = _type
 
     def draw(self):
-        if (self.elementbufferSize):            
+        if (self.elementbufferSize):
             glEnableVertexAttribArray(0)
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[0])
             glVertexAttribPointer(0,self.pt_type,GL_FLOAT,GL_FALSE,0,None)
@@ -505,14 +505,6 @@ class GLViewer:
                     color_id = generate_color_id(_objs.object_list[i].id)
 
                     self.create_bbox_rendering(bounding_box, color_id)
-
-                    keypoints = _objs.object_list[i].keypoint
-                    if len(keypoints):
-                        for limb in sl.BODY_BONES:
-                            kp_1 = keypoints[limb[0].value]
-                            kp_2 = keypoints[limb[1].value]
-                            if (np.isfinite(kp_1[0]) and np.isfinite(kp_2[0])):
-                                self.skeletons.add_line(kp_1, kp_2, color_id)
 
         self.mutex.release()
         

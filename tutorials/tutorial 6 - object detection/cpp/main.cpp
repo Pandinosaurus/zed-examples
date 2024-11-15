@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2021, STEREOLABS.
+// Copyright (c) 2024, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -38,7 +38,6 @@ int main(int argc, char** argv) {
     // Create ZED objects
     Camera zed;
     InitParameters init_parameters;
-    init_parameters.camera_resolution = RESOLUTION::HD720;
     init_parameters.depth_mode = DEPTH_MODE::PERFORMANCE;
     init_parameters.coordinate_units = UNIT::METER;
     init_parameters.sdk_verbose = true;
@@ -53,11 +52,10 @@ int main(int argc, char** argv) {
     // Define the Objects detection module parameters
     ObjectDetectionParameters detection_parameters;
     // run detection for every Camera grab
-    detection_parameters.image_sync = true;
     // track detects object accross time and space
     detection_parameters.enable_tracking = true;
     // compute a binary mask for each object aligned on the left image
-    detection_parameters.enable_mask_output = true; // designed to give person pixel mask
+    detection_parameters.enable_segmentation = true; // designed to give person pixel mask
 
     // If you want to have object tracking you need to enable positional tracking first
     if (detection_parameters.enable_tracking)

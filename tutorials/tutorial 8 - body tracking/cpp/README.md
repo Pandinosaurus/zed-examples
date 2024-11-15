@@ -40,7 +40,7 @@ This module uses the GPU to perform deep neural networks computations. On platfo
 // Create ZED objects
 Camera zed;
 InitParameters initParameters;
-initParameters.camera_resolution = RESOLUTION::HD720;
+initParameters.camera_resolution = RESOLUTION::AUTO;
 initParameters.depth_mode = DEPTH_MODE::PERFORMANCE;
 initParameters.sdk_verbose = true;
 
@@ -61,7 +61,6 @@ We will define the object detection parameters. Notice that the object tracking 
 ObjectDetectionParameters detection_parameters;
 detection_parameters.enable_tracking = false;
 detection_parameters.enable_mask_output = false;
-detection_parameters.image_sync = false;
 
 // Object tracking requires the positional tracking module
 if (detection_parameters.enable_tracking)
@@ -84,7 +83,7 @@ The object detection is now activated.
 
 ## Capture data
 
-The object confidence threshold can be adjusted at runtime to select only the revelant persons depending on the scene complexity. Since the parameters have been set to `image_sync`, for each `grab` call, the image will be fed into the AI module and will output the detections for each frames.
+The object confidence threshold can be adjusted at runtime to select only the revelant persons depending on the scene complexity. For each `grab` call, the image will be fed into the AI module and will output the detections for each frames.
 
 ```cpp
 // Detection runtime parameters

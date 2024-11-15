@@ -15,7 +15,6 @@ namespace sl
             init_params.coordinateUnits = UNIT.METER;
             init_params.coordinateSystem = COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP;
             init_params.depthMode = DEPTH_MODE.PERFORMANCE;
-            init_params.sdkVerbose = true;
 
             Camera zedCamera = new Camera(0);
             // Open the camera
@@ -35,11 +34,11 @@ namespace sl
 
             // Enable Object Detection
             ObjectDetectionParameters object_detection_parameters = new ObjectDetectionParameters();
-            object_detection_parameters.detectionModel = sl.DETECTION_MODEL.MULTI_CLASS_BOX;
+            object_detection_parameters.detectionModel = sl.OBJECT_DETECTION_MODEL.MULTI_CLASS_BOX_FAST;
             object_detection_parameters.enableObjectTracking = true;
             object_detection_parameters.maxRange = -1;
             object_detection_parameters.batchParameters = new BatchParameters();
-            object_detection_parameters.enable2DMask = false;
+            object_detection_parameters.enableSegmentation = false;
             object_detection_parameters.enableObjectTracking = true;
 
             err = zedCamera.EnableObjectDetection(ref object_detection_parameters);

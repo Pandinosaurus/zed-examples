@@ -23,10 +23,9 @@ zed = sl.Camera()
 
 # Create a InitParameters object and set configuration parameters
 init_params = sl.InitParameters()
-init_params.camera_resolution = sl.RESOLUTION.HD720  # Use HD720 video mode
 init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE
 init_params.coordinate_units = sl.UNIT.METER
-init_params.sdk_verbose = True
+init_params.sdk_verbose = 1
 
 # Open the camera
 err = zed.open(init_params)
@@ -42,7 +41,6 @@ We will define the object detection parameters. Notice that the object tracking 
 # Define the Objects detection module parameters
 obj_param = sl.ObjectDetectionParameters()
 obj_param.enable_tracking=True
-obj_param.image_sync=True
 obj_param.enable_mask_output=True
 
 # Object tracking requires the positional tracking module
@@ -65,7 +63,7 @@ The object detection is now activated.
 
 ## Capture data
 
-The object confidence threshold can be adjusted at runtime to select only the revelant objects depending on the scene complexity. Since the parameters have been set to `image_sync`, for each `grab` call, the image will be fed into the AI module and will output the detections for each frames.
+The object confidence threshold can be adjusted at runtime to select only the revelant objects depending on the scene complexity. For each `grab` call, the image will be fed into the AI module and will output the detections for each frames.
 
 ```python
 # Detection Output
@@ -86,7 +84,6 @@ Once the program is over the modules can be disabled and the camera closed. This
 # Disable object detection and close the camera
 zed.disable_object_detection()
 zed.close()
-return 0
 ```
 
 And this is it!<br/>

@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2021, STEREOLABS.
+// Copyright (c) 2024, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -39,7 +39,7 @@ void printSensorConfiguration(struct SL_SensorParameters* sensor_parameters) {
 
 int main(int argc, char **argv) {
 
-    // Create a ZED camera object
+	// Create a ZED camera object
 	int camera_id = 0;
 	sl_create_camera(camera_id);
 
@@ -48,12 +48,12 @@ int main(int argc, char **argv) {
 	init_param.resolution = SL_RESOLUTION_HD1080;
 	init_param.input_type = SL_INPUT_TYPE_USB;
 	init_param.camera_device_id = camera_id;
-	init_param.camera_image_flip = SL_FLIP_MODE_AUTO; 
+	init_param.camera_image_flip = SL_FLIP_MODE_AUTO;
 	init_param.camera_disable_self_calib = false;
 	init_param.enable_image_enhancement = true;
 	init_param.svo_real_time_mode = true;
 	init_param.depth_mode = SL_DEPTH_MODE_PERFORMANCE;
-	init_param.depth_stabilization = true;
+	init_param.depth_stabilization = 1;
 	init_param.depth_maximum_distance = 40;
 	init_param.depth_minimum_distance = -1;
 	init_param.coordinate_unit = SL_UNIT_METER;
@@ -62,9 +62,12 @@ int main(int argc, char **argv) {
 	init_param.sdk_verbose = false;
 	init_param.sensors_required = false;
 	init_param.enable_right_side_measure = false;
-
-    // Open the camera
-	int state = sl_open_camera(camera_id, &init_param, "", "", 0, "", "", "");
+	init_param.open_timeout_sec = 5.0f;
+	init_param.async_grab_camera_recovery = false;
+	init_param.grab_compute_capping_fps = 0;
+	init_param.enable_image_validity_check = false;
+	// Open the camera
+	int state = sl_open_camera(camera_id, &init_param, 0, "", "", 0, "", "", "");
 
     if (state != 0) {
 		printf("Error Open \n");
@@ -78,7 +81,7 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
-	struct SL_SensorData sensor_data;
+	struct SL_SensorsData sensor_data;
 
 	int n = 0;
 

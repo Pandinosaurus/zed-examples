@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2021, STEREOLABS.
+// Copyright (c) 2024, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 	init_param.enable_image_enhancement = true;
 	init_param.svo_real_time_mode = true;
 	init_param.depth_mode = SL_DEPTH_MODE_PERFORMANCE;
-	init_param.depth_stabilization = true;
+	init_param.depth_stabilization = 1;
 	init_param.depth_maximum_distance = 40;
 	init_param.depth_minimum_distance = -1;
 	init_param.coordinate_unit = SL_UNIT_METER;
@@ -49,9 +49,13 @@ int main(int argc, char **argv) {
 	init_param.sdk_verbose = false;
 	init_param.sensors_required = false;
 	init_param.enable_right_side_measure = false;
+	init_param.open_timeout_sec = 5.0f;
+	init_param.async_grab_camera_recovery = false;
+	init_param.grab_compute_capping_fps = 0;
+	init_param.enable_image_validity_check = false;
 
     // Open the camera
-	int state = sl_open_camera(camera_id, &init_param, "", "", 0, "", "", "");
+	int state = sl_open_camera(camera_id, &init_param, 0,  "", "", 0, "", "", "");
 
     if (state != 0) {
 		printf("Error Open \n");
@@ -63,6 +67,7 @@ int main(int argc, char **argv) {
 	tracking_param.enable_area_memory = true;
 	tracking_param.enable_imu_fusion = true;
 	tracking_param.enable_pose_smothing = false;
+	tracking_param.depth_min_range = -1;
 
 	struct SL_Vector3  position;
 	position = (struct SL_Vector3) { .x = 0, .y = 0, .z = 0 };
@@ -73,6 +78,8 @@ int main(int argc, char **argv) {
 	tracking_param.initial_world_rotation = rotation;
 	tracking_param.set_as_static = false;
 	tracking_param.set_floor_as_origin = false;
+	tracking_param.set_gravity_as_origin = true;
+	tracking_param.mode = SL_POSITIONAL_TRACKING_MODE_GEN_1;
 
 	state = sl_enable_positional_tracking(camera_id, &tracking_param, "");
 	if (state != 0) {
@@ -80,31 +87,37 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	struct SL_ObjectDetectionParameters objs_param;
-	objs_param.enable_body_fitting = false;
-	objs_param.enable_mask_output = false;
-	objs_param.enable_tracking = true;
-	objs_param.image_sync = true;
-	objs_param.max_range = 40;
-	objs_param.model = SL_DETECTION_MODEL_HUMAN_BODY_ACCURATE;
+	struct SL_BodyTrackingParameters bt_param;
+	bt_param.enable_segmentation = false;
+	bt_param.enable_tracking = true;
+	bt_param.enable_body_fitting = true;
+	bt_param.max_range = 40;
+	bt_param.detection_model = SL_BODY_TRACKING_MODEL_HUMAN_BODY_MEDIUM;
+	bt_param.allow_reduced_precision_inference = false;
+	bt_param.body_format = SL_BODY_FORMAT_BODY_38;
+	bt_param.body_selection = SL_BODY_KEYPOINTS_SELECTION_FULL;
+	bt_param.instance_module_id = 0;
 
-	state = sl_enable_objects_detection(camera_id, &objs_param);
+	state = sl_enable_body_tracking(camera_id, &bt_param);
 	if (state != 0) {
 		printf("Error enable od \n");
 		return 1;
 	}
 
-	struct SL_ObjectDetectionRuntimeParameters objs_rt_param;
-	objs_rt_param.detection_confidence_threshold = 40;
+	struct SL_BodyTrackingRuntimeParameters bt_rt_param;
+	bt_rt_param.detection_confidence_threshold = 40;
+	bt_rt_param.minimum_keypoints_threshold = -1;
+	bt_rt_param.skeleton_smoothing = 0.0f;
 
 	struct SL_RuntimeParameters rt_param;
 	rt_param.enable_depth = true;
-	rt_param.confidence_threshold = 100;
+	rt_param.confidence_threshold = 95;
 	rt_param.reference_frame = SL_REFERENCE_FRAME_CAMERA;
-	rt_param.sensing_mode = SL_SENSING_MODE_STANDARD;
 	rt_param.texture_confidence_threshold = 100;
+	rt_param.confidence_threshold = 95;
+	rt_param.remove_saturated_areas = true;
 
-	struct SL_Objects objects;
+	struct SL_Bodies bodies;
 
 	// Capture 50 frames and stop
 	int nb_detection = 0;
@@ -113,33 +126,28 @@ int main(int argc, char **argv) {
 		state = sl_grab(camera_id, &rt_param);
 		// A new image is available if grab() returns ERROR_CODE::SUCCESS
 		if (state == 0) {
-			sl_retrieve_objects(camera_id, &objs_rt_param, &objects);
+			sl_retrieve_bodies(camera_id, &bt_rt_param, &bodies, 0);
 
-			if (objects.is_new == 1) {
-				printf("%i Objects detected \n", objects.nb_object);
+			if (bodies.is_new == 1) {
+				printf("%i Bodies  detected \n", bodies.nb_bodies);
 
-				if (objects.nb_object > 0) {
-					struct SL_ObjectData first_object = objects.object_list[0];
+				if (bodies.nb_bodies > 0) {
+					struct SL_BodyData first_body = bodies.body_list[0];
 
-					printf("First object attributes :\n");
-					printf("Label '%i' (conf. %f / 100) \n", (int)first_object.label, first_object.confidence);
-
-					if (objs_param.enable_tracking == true) {
-						printf(" Tracking ID: %i tracking state: %i / %i \n", (int)first_object.id, (int)first_object.tracking_state, (int)first_object.action_state);
+					printf("First body attributes :\n");
+					if (bt_param.enable_tracking == true) {
+						printf(" Tracking ID: %i tracking state: %i / %i \n", (int)first_body.id, (int)first_body.tracking_state, (int)first_body.action_state);
 					}
 
-					printf(" 3D Position: (%f, %f, %f) / Velocity: (%f, %f, %f) \n", first_object.position.x, first_object.position.y, first_object.position.z,
-						first_object.velocity.x, first_object.velocity.y, first_object.velocity.z);
+					printf(" 3D Position: (%f, %f, %f) / Velocity: (%f, %f, %f) \n", first_body.position.x, first_body.position.y, first_body.position.z,
+						first_body.velocity.x, first_body.velocity.y, first_body.velocity.z);
 
-					printf(" Bounding Box 2D \n");
-					for (int i = 0; i < 4; i++) {
-						printf("    (%f,%f) \n", first_object.bounding_box_2d[i].x, first_object.bounding_box_2d[i].y);
-					}
+					printf("Position of first 2D keypoint \n");
+					printf("    (%f,%f) \n", first_body.keypoint_2d[0].x, first_body.keypoint_2d[0].y);
 
-					printf(" Bounding Box 3D \n");
-					for (int i = 0; i < 4; i++) {
-						printf("    (%f,%f,%f) \n", first_object.bounding_box[i].x, first_object.bounding_box[i].y, first_object.bounding_box[i].z);
-					}
+					printf("Position of first 3D keypoint \n");
+					printf("    (%f,%f,%f) \n", first_body.keypoint[0].x, first_body.keypoint[0].y, first_body.keypoint[0].z);
+
 
 					printf("Press Enter to Continue");
 					while (getchar() != '\n');
@@ -149,8 +157,6 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	sl_disable_positional_tracking(camera_id, "");
-	sl_disable_objects_detection(camera_id);
 	sl_close_camera(camera_id);
     return 0;
 }

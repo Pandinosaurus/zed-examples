@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2021, STEREOLABS.
+// Copyright (c) 2024, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -23,10 +23,6 @@
  ** the ZED SDK can receive and process this stream. See Camera Streaming/Receiver example.     **
  *************************************************************************************************/
 
-// Standard includes
-#include <stdio.h>
-#include <string.h>
-
 // ZED includes
 #include <sl/Camera.hpp>
 
@@ -46,9 +42,9 @@ int main(int argc, char **argv) {
 
     // Set configuration parameters for the ZED
     InitParameters init_parameters;
-    init_parameters.camera_resolution = sl::RESOLUTION::HD720;
+    init_parameters.camera_resolution = sl::RESOLUTION::AUTO;
     init_parameters.depth_mode = DEPTH_MODE::NONE;
-    init_parameters.sdk_verbose = true;
+    init_parameters.sdk_verbose = 1;
     int res_arg = parseArgs(argc, argv, init_parameters);
 
     // Open the camera
@@ -59,9 +55,6 @@ int main(int argc, char **argv) {
     }
 
     StreamingParameters stream_params;
-    stream_params.codec = STREAMING_CODEC::H264;
-    stream_params.bitrate = 8000;
-    stream_params.chunk_size = 4096;
     if (argc == 2 && res_arg == 1) stream_params.port = atoi(argv[1]);
     if (argc > 2) stream_params.port = atoi(argv[2]);
 
@@ -122,16 +115,22 @@ int parseArgs(int argc, char **argv, sl::InitParameters& param) {
             param.input.setFromStream(sl::String(argv[1]));
             cout << "[Sample] Using Stream input, IP : " << argv[1] << endl;
         } else if (arg.find("HD2K") != string::npos) {
-            param.camera_resolution = sl::RESOLUTION::HD2K;
+            param.camera_resolution = RESOLUTION::HD2K;
             cout << "[Sample] Using Camera in resolution HD2K" << endl;
+        }else if (arg.find("HD1200") != string::npos) {
+            param.camera_resolution = RESOLUTION::HD1200;
+            cout << "[Sample] Using Camera in resolution HD1200" << endl;
         } else if (arg.find("HD1080") != string::npos) {
-            param.camera_resolution = sl::RESOLUTION::HD1080;
+            param.camera_resolution = RESOLUTION::HD1080;
             cout << "[Sample] Using Camera in resolution HD1080" << endl;
         } else if (arg.find("HD720") != string::npos) {
-            param.camera_resolution = sl::RESOLUTION::HD720;
+            param.camera_resolution = RESOLUTION::HD720;
             cout << "[Sample] Using Camera in resolution HD720" << endl;
-        } else if (arg.find("VGA") != string::npos) {
-            param.camera_resolution = sl::RESOLUTION::VGA;
+        }else if (arg.find("SVGA") != string::npos) {
+            param.camera_resolution = RESOLUTION::SVGA;
+            cout << "[Sample] Using Camera in resolution SVGA" << endl;
+        }else if (arg.find("VGA") != string::npos) {
+            param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;
         } else
             return 1;
